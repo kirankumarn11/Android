@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BeverageType, ContainerType } from '../types';
 import { X, Check } from 'lucide-react';
+import { Cup250Icon, Bottle500Icon, LargeBottle750Icon, CustomGlassIcon } from './ContainerIcons';
 
 interface CustomLogModalProps {
   isOpen: boolean;
@@ -24,13 +25,13 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
 
   const quickAmounts = [100, 150, 200, 250, 300, 400, 500, 750, 1000];
 
-  const beverages: { id: BeverageType; name: string; emoji: string; color: string }[] = [
-    { id: 'water', name: 'Water', emoji: '💧', color: 'text-sky-500' },
-    { id: 'lemon', name: 'Infused', emoji: '🍋', color: 'text-yellow-500' },
-    { id: 'sparkling', name: 'Sparkling', emoji: '🫧', color: 'text-cyan-400' },
-    { id: 'tea', name: 'Herbal Tea', emoji: '🍵', color: 'text-emerald-500' },
-    { id: 'electrolyte', name: 'Electrolyte', emoji: '⚡', color: 'text-orange-500' },
-    { id: 'coffee', name: 'Coffee', emoji: '☕', color: 'text-amber-700' },
+  const beverages: { id: BeverageType; name: string; emoji: string }[] = [
+    { id: 'water', name: 'Water', emoji: '💧' },
+    { id: 'lemon', name: 'Lemon', emoji: '🍋' },
+    { id: 'sparkling', name: 'Sparkling', emoji: '🫧' },
+    { id: 'tea', name: 'Tea', emoji: '🍵' },
+    { id: 'electrolyte', name: 'Electrolyte', emoji: '⚡' },
+    { id: 'coffee', name: 'Coffee', emoji: '☕' },
   ];
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -42,26 +43,27 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
-      <div className="w-full max-w-md rounded-3xl bg-m3-surface-container-high border border-m3-outline-variant p-6 shadow-m3-3 text-m3-on-surface">
-        <div className="flex items-center justify-between pb-3 border-b border-m3-outline-variant/40">
+      <div className="w-full max-w-md rounded-[28px] bg-m3-surface-container border border-m3-outline-variant/40 p-5 sm:p-6 shadow-m3-3 text-m3-on-surface space-y-4">
+        <div className="flex items-center justify-between pb-3 border-b border-m3-outline-variant/20">
           <div>
-            <h3 className="text-base font-bold text-m3-on-surface">Log Custom Hydration</h3>
-            <p className="text-xs text-m3-on-surface-variant">Select beverage and volume</p>
+            <h3 className="text-base font-bold text-m3-on-surface">Log Custom Drink</h3>
+            <p className="text-xs text-m3-on-surface-variant">Specify volume and beverage type</p>
           </div>
           <button
             onClick={onClose}
-            className="p-1 rounded-full text-m3-on-surface-variant hover:bg-m3-surface-variant transition"
+            className="w-8 h-8 rounded-full flex items-center justify-center text-m3-on-surface-variant hover:bg-m3-surface-container-high transition"
+            aria-label="Close"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Amount Display & Slider */}
           <div>
             <div className="flex items-baseline justify-between mb-1.5">
-              <label className="text-xs font-bold uppercase tracking-wider text-m3-on-surface-variant">
-                Intake Amount
+              <label className="text-xs font-bold uppercase tracking-wider text-m3-primary">
+                Volume
               </label>
               <div className="flex items-baseline gap-1">
                 <input
@@ -71,7 +73,7 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
                   step="10"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
-                  className="w-20 text-right text-lg font-bold bg-m3-surface-container border border-m3-outline-variant rounded-lg px-2 py-0.5 text-m3-on-surface"
+                  className="w-24 text-right text-lg font-black bg-m3-surface-container-lowest border border-m3-outline-variant/30 rounded-xl px-2 py-0.5 text-m3-on-surface focus:outline-none"
                 />
                 <span className="text-xs font-bold text-m3-on-surface-variant">{unit}</span>
               </div>
@@ -84,47 +86,46 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
               step="25"
               value={amount}
               onChange={(e) => setAmount(Number(e.target.value))}
-              className="w-full accent-m3-primary cursor-pointer"
             />
 
-            {/* Quick chips */}
+            {/* Quick Presets */}
             <div className="flex flex-wrap gap-1.5 mt-2">
               {quickAmounts.map((q) => (
                 <button
                   type="button"
                   key={q}
                   onClick={() => setAmount(q)}
-                  className={`text-[11px] px-2.5 py-1 rounded-full font-medium transition ${
+                  className={`text-[11px] px-2.5 py-1 rounded-xl font-medium transition it-squircle-button ${
                     amount === q
                       ? 'bg-m3-primary text-m3-on-primary font-bold shadow-xs'
-                      : 'bg-m3-surface-container text-m3-on-surface hover:bg-m3-surface-container-highest border border-m3-outline-variant/30'
+                      : 'bg-m3-surface-container-low text-m3-on-surface hover:bg-m3-surface-container-high border border-m3-outline-variant/20'
                   }`}
                 >
-                  +{q}
+                  {q}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Beverage Type */}
+          {/* Beverage Type Selection */}
           <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-m3-on-surface-variant block mb-1.5">
-              Beverage Category
+            <label className="text-xs font-bold uppercase tracking-wider text-m3-primary block mb-1.5">
+              Beverage Type
             </label>
             <div className="grid grid-cols-3 gap-2">
-              {beverages.map((b) => (
+              {beverages.map((bev) => (
                 <button
                   type="button"
-                  key={b.id}
-                  onClick={() => setBeverage(b.id)}
-                  className={`flex items-center gap-1.5 p-2 rounded-xl text-xs font-medium border transition ${
-                    beverage === b.id
-                      ? 'bg-m3-primary-container border-m3-primary text-m3-on-primary-container font-bold shadow-xs'
-                      : 'bg-m3-surface-container border-m3-outline-variant/30 text-m3-on-surface hover:bg-m3-surface-container-highest'
+                  key={bev.id}
+                  onClick={() => setBeverage(bev.id)}
+                  className={`p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition it-squircle-button ${
+                    beverage === bev.id
+                      ? 'bg-m3-primary text-m3-on-primary shadow-xs'
+                      : 'bg-m3-surface-container-low border-m3-outline-variant/25 text-m3-on-surface hover:bg-m3-surface-container-high'
                   }`}
                 >
-                  <span className="text-sm">{b.emoji}</span>
-                  <span className="truncate">{b.name}</span>
+                  <span className="text-xl">{bev.emoji}</span>
+                  <span>{bev.name}</span>
                 </button>
               ))}
             </div>
@@ -132,55 +133,62 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
 
           {/* Container Type */}
           <div>
-            <label className="text-xs font-bold uppercase tracking-wider text-m3-on-surface-variant block mb-1.5">
-              Container Used
+            <label className="text-xs font-bold uppercase tracking-wider text-m3-primary block mb-1.5">
+              Container
             </label>
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-4 gap-1.5">
               {[
-                { id: 'cup', label: 'Cup / Glass', icon: '☕' },
-                { id: 'bottle', label: 'Bottle', icon: '🍶' },
-                { id: 'custom', label: 'Other', icon: '🥤' },
-              ].map((c) => (
-                <button
-                  type="button"
-                  key={c.id}
-                  onClick={() => setContainer(c.id as ContainerType)}
-                  className={`flex items-center justify-center gap-1.5 p-2 rounded-xl text-xs font-medium border transition ${
-                    container === c.id
-                      ? 'bg-m3-secondary-container border-m3-outline text-m3-on-secondary-container font-bold'
-                      : 'bg-m3-surface-container border-m3-outline-variant/30 text-m3-on-surface hover:bg-m3-surface-container-highest'
-                  }`}
-                >
-                  <span>{c.icon}</span>
-                  <span>{c.label}</span>
-                </button>
-              ))}
+                { id: 'cup' as ContainerType, label: 'Cup', icon: Cup250Icon },
+                { id: 'bottle' as ContainerType, label: 'Bottle', icon: Bottle500Icon },
+                { id: 'large_bottle' as ContainerType, label: 'Large Bottle', icon: LargeBottle750Icon },
+                { id: 'custom' as ContainerType, label: 'Custom', icon: CustomGlassIcon },
+              ].map((c) => {
+                const IconComponent = c.icon;
+                return (
+                  <button
+                    type="button"
+                    key={c.id}
+                    onClick={() => setContainer(c.id)}
+                    className={`py-2 px-1 rounded-xl text-center text-xs font-semibold border transition it-squircle-button flex flex-col items-center justify-center gap-1 ${
+                      container === c.id
+                        ? 'bg-m3-surface-container-highest border-m3-primary text-m3-on-surface ring-1 ring-m3-primary font-bold'
+                        : 'bg-m3-surface-container-low border-m3-outline-variant/20 text-m3-on-surface-variant hover:bg-m3-surface-container-high'
+                    }`}
+                  >
+                    <IconComponent className="w-5 h-5 text-m3-primary" />
+                    <span className="text-[10px] mt-0.5 block leading-tight">{c.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* Note */}
+          {/* Optional Note */}
           <div>
+            <label className="text-xs font-bold uppercase tracking-wider text-m3-primary block mb-1">
+              Note (Optional)
+            </label>
             <input
               type="text"
-              placeholder="Optional note (e.g. Post-workout, with lunch)"
+              placeholder="e.g., Post-workout, with ice..."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full text-xs bg-m3-surface-container border border-m3-outline-variant rounded-xl px-3 py-2 text-m3-on-surface placeholder:text-m3-on-surface-variant/60 focus:outline-none focus:border-m3-primary"
+              className="w-full px-3 py-2 rounded-xl bg-m3-surface-container-lowest border border-m3-outline-variant/30 text-xs text-m3-on-surface focus:outline-none"
             />
           </div>
 
-          {/* Submit */}
-          <div className="pt-2 flex items-center gap-2">
+          {/* Action buttons */}
+          <div className="pt-2 flex items-center justify-end gap-2 border-t border-m3-outline-variant/20">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 py-2.5 rounded-full bg-m3-surface-container text-xs font-bold text-m3-on-surface hover:bg-m3-surface-container-highest transition"
+              className="px-4 py-2 rounded-xl text-xs font-semibold text-m3-on-surface-variant hover:bg-m3-surface-container-high transition"
             >
               Cancel
             </button>
             <button
               type="submit"
-              className="flex-1 py-2.5 rounded-full bg-m3-primary text-xs font-bold text-m3-on-primary shadow-m3-1 hover:brightness-110 active:scale-95 transition flex items-center justify-center gap-1.5"
+              className="px-5 py-2.5 rounded-2xl bg-m3-primary text-m3-on-primary text-xs font-bold shadow-xs hover:brightness-105 active:scale-95 transition flex items-center gap-1.5"
             >
               <Check className="w-4 h-4" />
               <span>Log {amount} {unit}</span>

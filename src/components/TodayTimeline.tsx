@@ -1,6 +1,7 @@
 import React from 'react';
 import { WaterLog, AppSettings } from '../types';
 import { Trash2, Clock, Droplets } from 'lucide-react';
+import { ContainerSymbol } from './ContainerIcons';
 
 interface TodayTimelineProps {
   logs: WaterLog[];
@@ -33,29 +34,29 @@ export const TodayTimeline: React.FC<TodayTimelineProps> = ({
     }
   };
 
-  const getBeverageBadge = (type: WaterLog['beverageType']) => {
+  const getBeverageName = (type: WaterLog['beverageType']) => {
     switch (type) {
       case 'lemon':
-        return { label: 'Lemon Infused', color: 'bg-yellow-500/10 text-yellow-600 dark:text-yellow-400' };
+        return 'Lemon Infused';
       case 'sparkling':
-        return { label: 'Sparkling', color: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' };
+        return 'Sparkling Water';
       case 'tea':
-        return { label: 'Herbal Tea', color: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' };
+        return 'Herbal Tea';
       case 'electrolyte':
-        return { label: 'Electrolyte', color: 'bg-orange-500/10 text-orange-600 dark:text-orange-400' };
+        return 'Electrolyte';
       case 'coffee':
-        return { label: 'Coffee', color: 'bg-amber-600/10 text-amber-700 dark:text-amber-400' };
+        return 'Coffee';
       default:
-        return { label: 'Pure Water', color: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' };
+        return 'Pure Water';
     }
   };
 
   return (
-    <div className="rounded-3xl bg-m3-surface-container border border-m3-outline-variant/40 p-5 shadow-xs">
-      <div className="flex items-center justify-between pb-3 border-b border-m3-outline-variant/30">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-m3-on-surface flex items-center gap-2">
-          <Clock className="w-4 h-4 text-m3-primary" />
-          <span>Today's Hydration Timeline</span>
+    <div className="rounded-[28px] bg-m3-surface-container-low border border-m3-outline-variant/35 p-5 shadow-xs transition-colors">
+      <div className="flex items-center justify-between pb-3 border-b border-m3-outline-variant/20">
+        <h3 className="text-xs font-bold uppercase tracking-wider text-m3-primary flex items-center gap-2">
+          <Clock className="w-4 h-4" />
+          <span>Today's Activity</span>
         </h3>
         <span className="text-xs text-m3-on-surface-variant font-medium">
           {logs.length} {logs.length === 1 ? 'drink' : 'drinks'} logged
@@ -64,44 +65,43 @@ export const TodayTimeline: React.FC<TodayTimelineProps> = ({
 
       {sortedLogs.length === 0 ? (
         <div className="py-10 text-center flex flex-col items-center justify-center">
-          <div className="w-12 h-12 rounded-full bg-m3-surface-container-high flex items-center justify-center text-m3-on-surface-variant mb-2">
+          <div className="w-12 h-12 rounded-2xl bg-m3-surface-container-high flex items-center justify-center text-m3-on-surface-variant mb-2">
             <Droplets className="w-6 h-6 stroke-1" />
           </div>
           <p className="text-sm font-bold text-m3-on-surface">No water logged yet today</p>
           <p className="text-xs text-m3-on-surface-variant mt-1 max-w-xs">
-            Start your day fresh by logging a standard cup or bottle above!
+            Tap any of the quick log cards above to record your first drink.
           </p>
         </div>
       ) : (
-        <div className="divide-y divide-m3-outline-variant/20 max-h-80 overflow-y-auto pr-1 mt-2">
+        <div className="divide-y divide-m3-outline-variant/15 max-h-80 overflow-y-auto pr-1 mt-2">
           {sortedLogs.map((log) => {
-            const badge = getBeverageBadge(log.beverageType);
             return (
               <div
                 key={log.id}
-                className="py-3 flex items-center justify-between gap-3 group hover:bg-m3-surface-container-high/50 px-2 rounded-2xl transition"
+                className="py-3 flex items-center justify-between gap-3 group hover:bg-m3-surface-container/60 px-2 rounded-2xl transition"
               >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-m3-surface-container-highest flex items-center justify-center text-xl shadow-xs">
-                    {getContainerEmoji(log.containerType)}
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-10 h-10 rounded-2xl bg-m3-surface-container-high flex items-center justify-center shrink-0 shadow-xs text-m3-primary">
+                    <ContainerSymbol type={log.containerType} className="w-5 h-5" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <div className="flex items-center gap-2">
                       <span className="text-sm font-bold text-m3-on-surface">
                         +{log.amount} {settings.unit}
                       </span>
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${badge.color}`}>
-                        {badge.label}
+                      <span className="text-xs text-m3-on-surface-variant truncate">
+                        {getBeverageName(log.beverageType)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2 text-[11px] text-m3-on-surface-variant mt-0.5">
+                    <div className="flex items-center gap-1.5 text-[11px] text-m3-on-surface-variant/80 mt-0.5">
                       <span>{formatTime(log.timestamp)}</span>
-                      <span>•</span>
+                      <span aria-hidden="true">·</span>
                       <span className="capitalize">{log.containerType.replace('_', ' ')}</span>
                       {log.note && (
                         <>
-                          <span>•</span>
-                          <span className="italic text-m3-on-surface/70 truncate max-w-[120px]">{log.note}</span>
+                          <span aria-hidden="true">·</span>
+                          <span className="italic truncate">{log.note}</span>
                         </>
                       )}
                     </div>
@@ -110,11 +110,11 @@ export const TodayTimeline: React.FC<TodayTimelineProps> = ({
 
                 <button
                   onClick={() => onDeleteLog(log.id)}
-                  className="p-2 rounded-xl text-m3-on-surface-variant opacity-40 group-hover:opacity-100 hover:text-red-500 hover:bg-red-500/10 transition"
-                  title="Delete log"
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-m3-on-surface-variant/60 hover:text-red-500 hover:bg-red-500/10 transition shrink-0"
+                  title="Delete entry"
                   aria-label="Delete entry"
                 >
-                  <Trash2 className="w-4 h-4" />
+                  <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>
             );

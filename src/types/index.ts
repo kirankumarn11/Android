@@ -13,6 +13,8 @@ export interface WaterLog {
 
 export type ThemeMode = 'system' | 'light' | 'dark' | 'amoled';
 
+export type ThemeAccent = 'water' | 'mint' | 'rose' | 'violet' | 'amber' | 'monochrome';
+
 export interface AppSettings {
   dailyGoal: number; // in ml, default 2500
   cupVolume: number; // in ml, default 250
@@ -20,6 +22,7 @@ export interface AppSettings {
   largeBottleVolume: number; // in ml, default 750
   unit: 'ml' | 'oz';
   theme: ThemeMode;
+  themeAccent: ThemeAccent;
   reminderEnabled: boolean;
   reminderIntervalMinutes: number; // default 60
   activeHoursStart: string; // "08:00"

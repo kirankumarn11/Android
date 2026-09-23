@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppSettings, ContainerType, BeverageType } from '../types';
-import { Plus, Sparkles, CupSoda } from 'lucide-react';
+import { Plus, CupSoda } from 'lucide-react';
+import { Cup250Icon, Bottle500Icon, LargeBottle750Icon } from './ContainerIcons';
 
 interface QuickLogSectionProps {
   settings: AppSettings;
@@ -13,86 +14,93 @@ export const QuickLogSection: React.FC<QuickLogSectionProps> = ({
   onLogQuick,
   onOpenCustomModal,
 }) => {
+  const tools = [
+    {
+      id: 'cup' as ContainerType,
+      title: 'Cup / Glass',
+      amount: settings.cupVolume,
+      iconComponent: Cup250Icon,
+      desc: 'Glass or mug',
+      onClick: () => onLogQuick(settings.cupVolume, 'cup'),
+    },
+    {
+      id: 'bottle' as ContainerType,
+      title: 'Water Bottle',
+      amount: settings.bottleVolume,
+      iconComponent: Bottle500Icon,
+      desc: 'Standard bottle',
+      onClick: () => onLogQuick(settings.bottleVolume, 'bottle'),
+    },
+    {
+      id: 'large_bottle' as ContainerType,
+      title: 'Large Bottle',
+      amount: settings.largeBottleVolume,
+      iconComponent: LargeBottle750Icon,
+      desc: 'Gym & sports bottle',
+      onClick: () => onLogQuick(settings.largeBottleVolume, 'large_bottle'),
+    },
+  ];
+
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-m3-on-surface-variant flex items-center gap-1.5">
-          <CupSoda className="w-4 h-4 text-m3-primary" />
-          <span>Quick Log</span>
-        </h3>
-        <span className="text-xs text-m3-on-surface-variant">Tap to record intake</span>
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-xs font-bold uppercase tracking-wider text-m3-primary flex items-center gap-1.5">
+          <CupSoda className="w-4 h-4" />
+          <span>Quick Log Drink</span>
+        </h2>
+        <span className="text-[11px] text-m3-on-surface-variant font-medium">1-tap recording</span>
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Standard Cup */}
-        <button
-          onClick={() => onLogQuick(settings.cupVolume, 'cup')}
-          className="relative p-4 rounded-3xl bg-m3-surface-container border border-m3-outline-variant/40 hover:border-m3-primary hover:bg-m3-primary-container/20 active:scale-95 transition-all text-left group shadow-xs"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-sky-500/10 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
-            ☕
-          </div>
-          <div className="mt-3">
-            <span className="text-xs font-bold text-m3-on-surface block">Standard Cup</span>
-            <span className="text-sm font-extrabold text-m3-primary">
-              +{settings.cupVolume} {settings.unit}
-            </span>
-          </div>
-          <span className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition text-[10px] font-bold text-m3-primary">
-            +Add
-          </span>
-        </button>
+        {tools.map((tool) => {
+          const Icon = tool.iconComponent;
+          return (
+            <button
+              key={tool.id}
+              onClick={tool.onClick}
+              className="p-4 rounded-[24px] bg-m3-surface-container-low border border-m3-outline-variant/30 hover:border-m3-primary/60 hover:bg-m3-surface-container text-left transition-all it-squircle-button group flex flex-col justify-between"
+            >
+              <div className="flex items-start justify-between w-full">
+                <div className="w-12 h-12 rounded-2xl bg-m3-surface-container-high text-m3-primary flex items-center justify-center group-hover:scale-105 transition-transform shadow-xs">
+                  <Icon className="w-7 h-7" />
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-m3-primary-container text-m3-on-primary-container">
+                  +{tool.amount}
+                </span>
+              </div>
 
-        {/* Standard Bottle */}
-        <button
-          onClick={() => onLogQuick(settings.bottleVolume, 'bottle')}
-          className="relative p-4 rounded-3xl bg-m3-surface-container border border-m3-outline-variant/40 hover:border-m3-primary hover:bg-m3-primary-container/20 active:scale-95 transition-all text-left group shadow-xs"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 dark:bg-cyan-500/20 text-cyan-600 dark:text-cyan-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
-            🍶
-          </div>
-          <div className="mt-3">
-            <span className="text-xs font-bold text-m3-on-surface block">Water Bottle</span>
-            <span className="text-sm font-extrabold text-m3-primary">
-              +{settings.bottleVolume} {settings.unit}
-            </span>
-          </div>
-          <span className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition text-[10px] font-bold text-m3-primary">
-            +Add
-          </span>
-        </button>
+              <div className="mt-3">
+                <span className="text-xs font-bold text-m3-on-surface block truncate">
+                  {tool.title}
+                </span>
+                <span className="text-[11px] text-m3-on-surface-variant block truncate mt-0.5">
+                  {tool.amount} {settings.unit}
+                </span>
+              </div>
+            </button>
+          );
+        })}
 
-        {/* Large Bottle */}
-        <button
-          onClick={() => onLogQuick(settings.largeBottleVolume, 'large_bottle')}
-          className="relative p-4 rounded-3xl bg-m3-surface-container border border-m3-outline-variant/40 hover:border-m3-primary hover:bg-m3-primary-container/20 active:scale-95 transition-all text-left group shadow-xs"
-        >
-          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 flex items-center justify-center text-2xl group-hover:scale-110 transition">
-            🧊
-          </div>
-          <div className="mt-3">
-            <span className="text-xs font-bold text-m3-on-surface block">Large Bottle</span>
-            <span className="text-sm font-extrabold text-m3-primary">
-              +{settings.largeBottleVolume} {settings.unit}
-            </span>
-          </div>
-          <span className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition text-[10px] font-bold text-m3-primary">
-            +Add
-          </span>
-        </button>
-
-        {/* Custom Input */}
+        {/* Custom Drink Volume Tile (Image Toolbox dashed utility style) */}
         <button
           onClick={onOpenCustomModal}
-          className="relative p-4 rounded-3xl bg-m3-surface-container-high border border-dashed border-m3-outline/60 hover:border-m3-primary hover:bg-m3-primary-container/20 active:scale-95 transition-all text-left group shadow-xs flex flex-col justify-between"
+          className="p-4 rounded-[24px] bg-m3-surface-container-low border border-dashed border-m3-outline-variant/60 hover:border-m3-primary hover:bg-m3-surface-container text-left transition-all it-squircle-button group flex flex-col justify-between"
         >
-          <div className="w-12 h-12 rounded-2xl bg-m3-secondary-container text-m3-on-secondary-container flex items-center justify-center group-hover:rotate-90 transition">
-            <Plus className="w-6 h-6" />
+          <div className="flex items-start justify-between w-full">
+            <div className="w-12 h-12 rounded-2xl bg-m3-primary text-m3-on-primary flex items-center justify-center shadow-xs group-hover:rotate-90 transition-transform">
+              <Plus className="w-6 h-6 stroke-[2.5]" />
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-m3-surface-container-highest text-m3-on-surface-variant">
+              Any
+            </span>
           </div>
+
           <div className="mt-3">
-            <span className="text-xs font-bold text-m3-on-surface block">Custom Volume</span>
-            <span className="text-[11px] font-semibold text-m3-on-surface-variant flex items-center gap-1">
-              <Sparkles className="w-3 h-3 text-amber-500" /> Any drink
+            <span className="text-xs font-bold text-m3-on-surface block">
+              Custom Entry
+            </span>
+            <span className="text-[11px] text-m3-on-surface-variant block mt-0.5">
+              Specify ml & drink type
             </span>
           </div>
         </button>

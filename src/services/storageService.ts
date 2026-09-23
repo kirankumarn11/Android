@@ -13,6 +13,7 @@ export const DEFAULT_SETTINGS: AppSettings = {
   largeBottleVolume: 750,
   unit: 'ml',
   theme: 'system',
+  themeAccent: 'water',
   reminderEnabled: true,
   reminderIntervalMinutes: 60,
   activeHoursStart: '08:00',

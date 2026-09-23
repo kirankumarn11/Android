@@ -19,6 +19,7 @@ import { M3NavigationBar, NavTab } from './components/M3NavigationBar';
 import { WaterHeroGauge } from './components/WaterHeroGauge';
 import { QuickLogSection } from './components/QuickLogSection';
 import { TodayTimeline } from './components/TodayTimeline';
+import { HydrationTipCard } from './components/HydrationTipCard';
 import { HistoryView } from './components/HistoryView';
 import { RemindersView } from './components/RemindersView';
 import { SettingsView } from './components/SettingsView';
@@ -53,7 +54,7 @@ export default function App() {
     storageService.saveReminderState(reminderState);
   }, [reminderState]);
 
-  // Handle Theme application
+  // Handle Theme and Monet Accent application
   useEffect(() => {
     const root = document.documentElement;
     root.classList.remove('dark', 'amoled');
@@ -66,7 +67,10 @@ export default function App() {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) root.classList.add('dark');
     }
-  }, [settings.theme]);
+
+    // Set Image Toolbox dynamic Monet accent
+    root.setAttribute('data-accent', settings.themeAccent || 'water');
+  }, [settings.theme, settings.themeAccent]);
 
   // Today's logs and volume
   const todayLogs = useMemo(() => {
@@ -330,7 +334,9 @@ export default function App() {
       {/* Top Header */}
       <M3TopBar
         theme={settings.theme}
+        themeAccent={settings.themeAccent || 'water'}
         onThemeChange={(newTheme) => setSettings((s) => ({ ...s, theme: newTheme }))}
+        onAccentChange={(newAccent) => setSettings((s) => ({ ...s, themeAccent: newAccent }))}
         streak={streak}
         onOpenReminders={() => setCurrentTab('reminders')}
         hasActiveReminder={reminderState.isSnoozed || isReminderBannerOpen}
@@ -367,6 +373,9 @@ export default function App() {
               }
               onOpenCustomModal={() => setIsCustomModalOpen(true)}
             />
+
+            {/* Hydration Tip Card */}
+            <HydrationTipCard />
 
             {/* Today's Timeline */}
             <TodayTimeline
