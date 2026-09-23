@@ -1,0 +1,6 @@
+{
+  "name": "HydroFlow - Material 3 Water Tracker",
+  "description": "Material 3 hydration tracker with dark mode, offline PWA support, customizable interval reminders, cup and bottle logging, smart auto-snooze, and historical analytics.",
+  "requestFramePermissions": ["notifications"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
