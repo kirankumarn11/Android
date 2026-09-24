@@ -1,5 +1,6 @@
 import React from 'react';
 import { LayoutDashboard, History, BellRing, SlidersHorizontal } from 'lucide-react';
+import { hapticService } from '../services/hapticService';
 
 export type NavTab = 'dashboard' | 'history' | 'reminders' | 'settings';
 
@@ -16,6 +17,10 @@ export const M3NavigationBar: React.FC<M3NavigationBarProps> = ({
   nextReminderCountdown,
   hasPendingAlert,
 }) => {
+  const handleTabClick = (tab: NavTab) => {
+    hapticService.selection();
+    onTabChange(tab);
+  };
   const tabs = [
     {
       id: 'dashboard' as NavTab,
@@ -51,7 +56,7 @@ export const M3NavigationBar: React.FC<M3NavigationBarProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 className="flex flex-col items-center justify-center py-1 group focus:outline-none"
               >
                 <div
@@ -93,7 +98,7 @@ export const M3NavigationBar: React.FC<M3NavigationBarProps> = ({
             return (
               <button
                 key={tab.id}
-                onClick={() => onTabChange(tab.id)}
+                onClick={() => handleTabClick(tab.id)}
                 className={`relative flex items-center gap-2 px-5 py-2 rounded-full text-xs font-semibold transition-all duration-150 it-squircle-button ${
                   isActive
                     ? 'bg-m3-primary text-m3-on-primary shadow-xs font-bold'

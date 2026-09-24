@@ -2,6 +2,7 @@ import React from 'react';
 import { AppSettings, ContainerType, BeverageType } from '../types';
 import { Plus, CupSoda } from 'lucide-react';
 import { Cup250Icon, Bottle500Icon, LargeBottle750Icon } from './ContainerIcons';
+import { hapticService } from '../services/hapticService';
 
 interface QuickLogSectionProps {
   settings: AppSettings;
@@ -83,7 +84,10 @@ export const QuickLogSection: React.FC<QuickLogSectionProps> = ({
 
         {/* Custom Drink Volume Tile (Image Toolbox dashed utility style) */}
         <button
-          onClick={onOpenCustomModal}
+          onClick={() => {
+            hapticService.light();
+            onOpenCustomModal();
+          }}
           className="p-4 rounded-[24px] bg-m3-surface-container-low border border-dashed border-m3-outline-variant/60 hover:border-m3-primary hover:bg-m3-surface-container text-left transition-all it-squircle-button group flex flex-col justify-between"
         >
           <div className="flex items-start justify-between w-full">

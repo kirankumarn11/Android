@@ -24,8 +24,13 @@ import { HistoryView } from './components/HistoryView';
 import { RemindersView } from './components/RemindersView';
 import { SettingsView } from './components/SettingsView';
 import { ReminderBanner } from './components/ReminderBanner';
+import { NotificationPermissionModal } from './components/NotificationPermissionModal';
 import { CustomLogModal } from './components/CustomLogModal';
 import { OfflineIndicator } from './components/OfflineIndicator';
+import { CompactWidgetView } from './components/CompactWidgetView';
+import { WidgetModal } from './components/WidgetModal';
+import { widgetService } from './services/widgetService';
+import { hapticService } from './services/hapticService';
 import { CheckCircle2, RotateCcw } from 'lucide-react';
 
 export default function App() {
@@ -40,6 +45,39 @@ export default function App() {
   const [isCustomModalOpen, setIsCustomModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [lastDeletedLog, setLastDeletedLog] = useState<WaterLog | null>(null);
+
+  // PWA Home Screen Widget & Mode state
+  const [isWidgetMode, setIsWidgetMode] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('mode') === 'widget' || params.get('widget') === '1';
+  });
+  const [isWidgetModalOpen, setIsWidgetModalOpen] = useState(false);
+  const [isPermissionModalOpen, setIsPermissionModalOpen] = useState(false);
+
+  // Automatically request notification permission on first install / first launch
+  useEffect(() => {
+    storageService.markInstalled();
+    const perm = notificationService.getPermissionStatus();
+    const hasPrompted = storageService.hasPromptedNotification();
+
+    // If permission has not yet been decided ('default') and user has not been prompted:
+    if (perm === 'default' && !hasPrompted) {
+      const timer = setTimeout(() => {
+        setIsPermissionModalOpen(true);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+
+    // Also trigger if app is installed as a PWA
+    const handleAppInstalled = () => {
+      if (notificationService.getPermissionStatus() === 'default') {
+        setIsPermissionModalOpen(true);
+      }
+    };
+    window.addEventListener('appinstalled', handleAppInstalled);
+    return () => window.removeEventListener('appinstalled', handleAppInstalled);
+  }, []);
 
   // Sync state to localStorage
   useEffect(() => {
@@ -114,6 +152,20 @@ export default function App() {
     return Math.max(1, count);
   }, [logs]);
 
+  // Synchronize PWA Home Screen App Badge and Widget Data
+  useEffect(() => {
+    widgetService.updateAppBadge(todayTotalMl, settings.dailyGoal, settings.cupVolume);
+    widgetService.syncWidgetData({
+      todayTotalMl,
+      dailyGoal: settings.dailyGoal,
+      percentage: Math.min(100, Math.round((todayTotalMl / (settings.dailyGoal || 2500)) * 100)),
+      remainingMl: Math.max(0, settings.dailyGoal - todayTotalMl),
+      streak,
+      unit: settings.unit,
+      themeAccent: settings.themeAccent,
+    });
+  }, [todayTotalMl, settings.dailyGoal, settings.cupVolume, settings.unit, settings.themeAccent, streak]);
+
   // Helper: check if within active hours
   const isWithinActiveHours = useCallback(() => {
     const now = new Date();
@@ -128,7 +180,7 @@ export default function App() {
     return currentMinutes >= startMinutes && currentMinutes <= endMinutes;
   }, [settings.activeHoursStart, settings.activeHoursEnd]);
 
-  // Fire reminder event
+  // Fire reminder event (OS notification + sound + haptic + in-app banner)
   const triggerReminderNotification = useCallback(
     (isFollowUp = false) => {
       // Play audio chime
@@ -136,7 +188,12 @@ export default function App() {
         audioService.playSound(settings.soundType);
       }
 
-      // System notification
+      // Haptic vibration feedback
+      if (settings.hapticFeedbackEnabled) {
+        hapticService.medium();
+      }
+
+      // System notification via Service Worker / OS Notification shade
       notificationService.showHydrationNotification({
         title: isFollowUp ? '💧 Reminder: Missed water intake!' : '💧 Time to drink water!',
         body: `Have a standard cup (${settings.cupVolume}${settings.unit}) or bottle (${settings.bottleVolume}${settings.unit}) to stay refreshed.`,
@@ -153,14 +210,25 @@ export default function App() {
         remindAgainTriggered: isFollowUp,
       }));
     },
-    [settings.soundChimeEnabled, settings.soundType, settings.cupVolume, settings.bottleVolume, settings.unit]
+    [
+      settings.soundChimeEnabled,
+      settings.soundType,
+      settings.hapticFeedbackEnabled,
+      settings.cupVolume,
+      settings.bottleVolume,
+      settings.unit,
+    ]
   );
 
-  // Interval timer tick
+  // High-precision background timer using Web Worker + Visibility Sync
+  // Dedicated Web Workers run in a separate thread and are NOT throttled by browsers when backgrounded
   useEffect(() => {
     if (!settings.reminderEnabled) return;
 
-    const timer = setInterval(() => {
+    let worker: Worker | null = null;
+    let fallbackInterval: any = null;
+
+    const checkReminders = () => {
       const now = Date.now();
 
       // Check if snoozed
@@ -189,9 +257,39 @@ export default function App() {
           nextScheduledTime: now + settings.reminderIntervalMinutes * 60 * 1000,
         }));
       }
-    }, 2000);
+    };
 
-    return () => clearInterval(timer);
+    try {
+      worker = new Worker('/timer-worker.js');
+      worker.onmessage = (e) => {
+        if (e.data && e.data.type === 'TICK') {
+          checkReminders();
+        }
+      };
+      worker.postMessage({ type: 'START', intervalMs: 2000 });
+    } catch {
+      // Fallback for environments where Web Workers are restricted
+      fallbackInterval = setInterval(checkReminders, 2000);
+    }
+
+    // Visibility change: immediately check when resuming from screen lock or background
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        checkReminders();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+
+    return () => {
+      if (worker) {
+        worker.postMessage({ type: 'STOP' });
+        worker.terminate();
+      }
+      if (fallbackInterval) {
+        clearInterval(fallbackInterval);
+      }
+      document.removeEventListener('visibilitychange', handleVisibility);
+    };
   }, [
     settings.reminderEnabled,
     settings.reminderIntervalMinutes,
@@ -202,19 +300,28 @@ export default function App() {
     triggerReminderNotification,
   ]);
 
-  // Log water handler
+  // Keep hapticService synchronized with settings
+  useEffect(() => {
+    hapticService.setConfig(settings.hapticFeedbackEnabled, settings.hapticIntensity);
+  }, [settings.hapticFeedbackEnabled, settings.hapticIntensity]);
+
+  // Log water handler (supports backdated customTimestamp for historical day logging)
   const handleLogWater = (
     amount: number,
     containerType: ContainerType,
     beverageType: BeverageType = 'water',
-    note?: string
+    note?: string,
+    customTimestamp?: number
   ) => {
+    const isToday =
+      !customTimestamp ||
+      new Date(customTimestamp).toDateString() === new Date().toDateString();
     const wasGoalMet = todayTotalMl >= settings.dailyGoal;
-    const newTotal = todayTotalMl + amount;
+    const newTotal = isToday ? todayTotalMl + amount : todayTotalMl;
 
     const newLog: WaterLog = {
       id: `log_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-      timestamp: Date.now(),
+      timestamp: customTimestamp || Date.now(),
       amount,
       containerType,
       beverageType,
@@ -223,42 +330,90 @@ export default function App() {
 
     setLogs((prev) => [...prev, newLog]);
 
-    // Close reminder banner if open & reset timer
-    setIsReminderBannerOpen(false);
-    setReminderState({
-      isActive: true,
-      nextScheduledTime: Date.now() + settings.reminderIntervalMinutes * 60 * 1000,
-      isSnoozed: false,
-      snoozeUntilTime: null,
-      waitingForInputSince: null,
-      remindAgainTriggered: false,
-    });
+    if (isToday) {
+      // Close reminder banner if open & reset timer
+      setIsReminderBannerOpen(false);
+      setReminderState({
+        isActive: true,
+        nextScheduledTime: Date.now() + settings.reminderIntervalMinutes * 60 * 1000,
+        isSnoozed: false,
+        snoozeUntilTime: null,
+        waitingForInputSince: null,
+        remindAgainTriggered: false,
+      });
+    }
 
-    // Provide audio feedback
-    if (newTotal >= settings.dailyGoal && !wasGoalMet) {
+    // Provide haptic and audio feedback
+    if (isToday && newTotal >= settings.dailyGoal && !wasGoalMet) {
+      hapticService.celebration();
       audioService.playGoalCelebration();
       showToast(`🎉 Daily goal of ${settings.dailyGoal} ${settings.unit} reached!`);
     } else {
+      hapticService.waterDrop();
       audioService.playDroplet();
-      showToast(`Added +${amount} ${settings.unit} ${containerType}!`);
+      const dateContext = isToday
+        ? ''
+        : ` on ${new Date(customTimestamp!).toLocaleDateString([], { month: 'short', day: 'numeric' })}`;
+      showToast(`Added +${amount} ${settings.unit} (${beverageType})${dateContext}!`);
     }
   };
 
+  // Handle PWA Home Screen Quick Action Shortcuts & Notification Actions (?action=log_cup, ?action=log_bottle, ?action=snooze_15)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get('action');
+    if (action === 'log_cup') {
+      handleLogWater(settings.cupVolume, 'cup', 'water', 'Quick Action');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (action === 'log_bottle') {
+      handleLogWater(settings.bottleVolume, 'bottle', 'water', 'Quick Action');
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (action === 'snooze_15') {
+      handleSnooze(15);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+
+    // Listen for real-time notification actions dispatched by the Service Worker
+    if ('serviceWorker' in navigator) {
+      const handleSwMessage = (event: MessageEvent) => {
+        if (!event.data) return;
+        if (event.data.type === 'NOTIFICATION_ACTION') {
+          const act = event.data.action;
+          if (act === 'log_cup') {
+            handleLogWater(settings.cupVolume, 'cup', 'water', 'Notification Tray');
+          } else if (act === 'log_bottle') {
+            handleLogWater(settings.bottleVolume, 'bottle', 'water', 'Notification Tray');
+          } else if (act === 'snooze_15') {
+            handleSnooze(15);
+          }
+        }
+      };
+      navigator.serviceWorker.addEventListener('message', handleSwMessage);
+      return () => navigator.serviceWorker.removeEventListener('message', handleSwMessage);
+    }
+  }, [settings.cupVolume, settings.bottleVolume]);
+
   // Snooze handler
-  const handleSnooze = () => {
-    const snoozeUntil = Date.now() + settings.snoozeDurationMinutes * 60 * 1000;
+  const handleSnooze = (customMinutes?: number) => {
+    hapticService.light();
+    const mins = customMinutes ?? settings.snoozeDurationMinutes;
+    const snoozeUntil = Date.now() + mins * 60 * 1000;
     setReminderState((prev) => ({
       ...prev,
       isSnoozed: true,
       snoozeUntilTime: snoozeUntil,
+      nextScheduledTime: snoozeUntil,
       waitingForInputSince: null,
+      remindAgainTriggered: false,
     }));
     setIsReminderBannerOpen(false);
-    showToast(`Snoozed for ${settings.snoozeDurationMinutes} minutes.`);
+    showToast(`⏰ Snoozed for ${mins} minutes.`);
   };
 
   // Dismiss reminder
   const handleDismissReminder = () => {
+    hapticService.light();
     setIsReminderBannerOpen(false);
     setReminderState((prev) => ({
       ...prev,
@@ -269,6 +424,7 @@ export default function App() {
 
   // Reset interval countdown
   const handleResetInterval = () => {
+    hapticService.selection();
     setReminderState({
       isActive: true,
       nextScheduledTime: Date.now() + settings.reminderIntervalMinutes * 60 * 1000,
@@ -284,6 +440,7 @@ export default function App() {
   const handleDeleteLog = (id: string) => {
     const logToDelete = logs.find((l) => l.id === id);
     if (!logToDelete) return;
+    hapticService.medium();
     setLastDeletedLog(logToDelete);
     setLogs((prev) => prev.filter((l) => l.id !== id));
     showToast(`Deleted ${logToDelete.amount} ${settings.unit} entry.`);
@@ -291,6 +448,7 @@ export default function App() {
 
   const handleUndoDelete = () => {
     if (lastDeletedLog) {
+      hapticService.light();
       setLogs((prev) => [...prev, lastDeletedLog]);
       setLastDeletedLog(null);
       showToast('Entry restored.');
@@ -329,6 +487,23 @@ export default function App() {
     return `${totalMinutes}m ${seconds < 10 ? '0' : ''}${seconds}s`;
   }, [reminderState.nextScheduledTime, reminderState.isSnoozed, reminderState.snoozeUntilTime]);
 
+  // Standalone PWA Widget View (when opened as widget or ?mode=widget)
+  if (isWidgetMode) {
+    return (
+      <div className="min-h-screen bg-m3-surface text-m3-on-surface p-3 flex items-center justify-center">
+        <CompactWidgetView
+          initialSettings={settings}
+          initialLogs={logs}
+          isStandalone={true}
+          onExpandToFullApp={() => {
+            setIsWidgetMode(false);
+            window.history.replaceState({}, document.title, '/');
+          }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex flex-col bg-m3-surface text-m3-on-surface transition-colors duration-200">
       {/* Top Header */}
@@ -340,6 +515,7 @@ export default function App() {
         streak={streak}
         onOpenReminders={() => setCurrentTab('reminders')}
         hasActiveReminder={reminderState.isSnoozed || isReminderBannerOpen}
+        onOpenWidgetModal={() => setIsWidgetModalOpen(true)}
       />
 
       {/* Main Content Area */}
@@ -388,7 +564,14 @@ export default function App() {
 
         {currentTab === 'history' && (
           <div className="animate-in fade-in duration-200">
-            <HistoryView logs={logs} settings={settings} />
+            <HistoryView
+              logs={logs}
+              settings={settings}
+              onDeleteLog={handleDeleteLog}
+              onAddBackdatedLog={(amount, containerType, beverageType, timestamp, note) => {
+                handleLogWater(amount, containerType, beverageType, note, timestamp);
+              }}
+            />
           </div>
         )}
 
@@ -402,6 +585,7 @@ export default function App() {
               }
               onTriggerTestReminder={() => triggerReminderNotification(false)}
               onResetIntervalTimer={handleResetInterval}
+              onSnooze={handleSnooze}
               countdownText={countdownText}
             />
           </div>
@@ -414,6 +598,7 @@ export default function App() {
               onUpdateSettings={(newSettings) =>
                 setSettings((s) => ({ ...s, ...newSettings }))
               }
+              onOpenWidgetModal={() => setIsWidgetModalOpen(true)}
               onDataReset={() => {
                 storageService.clearAllData();
                 setLogs([]);
@@ -447,6 +632,33 @@ export default function App() {
           handleLogWater(amount, container, beverage, note)
         }
         unit={settings.unit}
+      />
+
+      {/* First Install Notification Permission Onboarding Modal */}
+      <NotificationPermissionModal
+        isOpen={isPermissionModalOpen}
+        onClose={() => {
+          storageService.setPromptedNotification();
+          setIsPermissionModalOpen(false);
+        }}
+        onPermissionGranted={() => {
+          storageService.setPromptedNotification();
+          setSettings((s) => ({ ...s, notificationsAllowed: true, reminderEnabled: true }));
+          setIsPermissionModalOpen(false);
+          showToast('🔔 Reminders activated! We will keep you hydrated.');
+        }}
+        dailyGoal={settings.dailyGoal}
+        unit={settings.unit}
+      />
+
+      {/* PWA Home Screen Widget Modal */}
+      <WidgetModal
+        isOpen={isWidgetModalOpen}
+        onClose={() => setIsWidgetModalOpen(false)}
+        settings={settings}
+        logs={logs}
+        todayTotalMl={todayTotalMl}
+        streak={streak}
       />
 
       {/* Offline Connectivity Toast */}

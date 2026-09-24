@@ -23,6 +23,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   autoSnoozeGracePeriodMinutes: 5,
   soundChimeEnabled: true,
   soundType: 'droplet',
+  hapticFeedbackEnabled: true,
+  hapticIntensity: 'medium',
   notificationsAllowed: false,
 };
 
@@ -129,6 +131,30 @@ export const storageService = {
     localStorage.removeItem(STORAGE_KEYS.LOGS);
     localStorage.removeItem(STORAGE_KEYS.SETTINGS);
     localStorage.removeItem(STORAGE_KEYS.REMINDER_STATE);
+    localStorage.removeItem('hydroflow_installed_at');
+    localStorage.removeItem('hydroflow_notification_prompted');
+  },
+
+  isFirstInstall(): boolean {
+    if (typeof window === 'undefined') return false;
+    return !localStorage.getItem('hydroflow_installed_at');
+  },
+
+  markInstalled(): void {
+    if (typeof window === 'undefined') return;
+    if (!localStorage.getItem('hydroflow_installed_at')) {
+      localStorage.setItem('hydroflow_installed_at', Date.now().toString());
+    }
+  },
+
+  hasPromptedNotification(): boolean {
+    if (typeof window === 'undefined') return true;
+    return localStorage.getItem('hydroflow_notification_prompted') === 'true';
+  },
+
+  setPromptedNotification(): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('hydroflow_notification_prompted', 'true');
   },
 };
 

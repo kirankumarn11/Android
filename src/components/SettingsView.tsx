@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
-import { AppSettings, ThemeAccent, ThemeMode } from '../types';
+import { AppSettings, HapticIntensity, ThemeAccent, ThemeMode } from '../types';
 import { storageService } from '../services/storageService';
+import { hapticService, HapticPatternType } from '../services/hapticService';
+import { M3Switch } from './RemindersView';
 import { MONET_PALETTES } from './MonetPaletteModal';
 import { Cup250Icon, Bottle500Icon, LargeBottle750Icon } from './ContainerIcons';
 import {
@@ -17,18 +19,28 @@ import {
   CupSoda,
   Palette,
   Check,
+  Vibrate,
+  Zap,
+  Activity,
+  Waves,
+  CheckCircle2,
+  LayoutGrid,
+  AppWindow,
+  Smartphone,
 } from 'lucide-react';
 
 interface SettingsViewProps {
   settings: AppSettings;
   onUpdateSettings: (newSettings: Partial<AppSettings>) => void;
   onDataReset: () => void;
+  onOpenWidgetModal?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
   settings,
   onUpdateSettings,
   onDataReset,
+  onOpenWidgetModal,
 }) => {
   // Goal calculator state
   const [weightKg, setWeightKg] = useState(70);
@@ -39,6 +51,16 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   // Backup state
   const [backupCopied, setBackupCopied] = useState(false);
   const [importStatus, setImportStatus] = useState<string | null>(null);
+
+  // Haptic feedback testing state
+  const [activeHapticTest, setActiveHapticTest] = useState<string | null>(null);
+
+  const handleTestHaptic = (pattern: HapticPatternType) => {
+    setActiveHapticTest(pattern);
+    hapticService.setConfig(settings.hapticFeedbackEnabled, settings.hapticIntensity);
+    hapticService.trigger(pattern);
+    setTimeout(() => setActiveHapticTest(null), 700);
+  };
 
   const calculateHydrationGoal = () => {
     let base = weightKg * 35;
@@ -191,6 +213,251 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </button>
               );
             })}
+          </div>
+        </div>
+      </div>
+
+      {/* Haptic Feedback & Tactile Response Customization */}
+      <div className="rounded-[28px] bg-m3-surface-container-low border border-m3-outline-variant/35 p-5 sm:p-6 space-y-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-m3-outline-variant/20 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-m3-primary-container text-m3-on-primary-container flex items-center justify-center shrink-0">
+              <Vibrate className={`w-5 h-5 ${activeHapticTest ? 'animate-bounce text-amber-500' : ''}`} />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-m3-on-surface">Haptic Feedback & Tactile Response</h3>
+                <span
+                  className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                    settings.hapticFeedbackEnabled
+                      ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-m3-surface-container-highest text-m3-on-surface-variant'
+                  }`}
+                >
+                  {settings.hapticFeedbackEnabled ? 'HAPTICS ON' : 'DISABLED'}
+                </span>
+              </div>
+              <p className="text-xs text-m3-on-surface-variant">
+                Tactile vibrations for drink logging, reminders, and daily goal celebrations
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => handleTestHaptic('water_drop')}
+              disabled={!settings.hapticFeedbackEnabled}
+              className="px-3 py-1.5 rounded-xl bg-m3-surface-container border border-m3-outline-variant/40 text-xs font-bold text-m3-primary hover:bg-m3-surface-container-high active:scale-95 disabled:opacity-40 transition flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Test droplet vibration"
+            >
+              <Zap className="w-3.5 h-3.5 fill-current" />
+              <span>Test Pulse</span>
+            </button>
+
+            <M3Switch
+              checked={settings.hapticFeedbackEnabled}
+              onChange={(checked) => {
+                onUpdateSettings({ hapticFeedbackEnabled: checked });
+                hapticService.setConfig(checked, settings.hapticIntensity);
+                if (checked) {
+                  hapticService.trigger('medium');
+                }
+              }}
+              ariaLabel="Toggle Haptic Feedback"
+            />
+          </div>
+        </div>
+
+        {/* Haptic Intensity Selector */}
+        <div className="space-y-2">
+          <span className="text-[11px] font-bold uppercase tracking-wider text-m3-primary block">
+            Vibration Strength & Feel
+          </span>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+            {[
+              {
+                id: 'light' as HapticIntensity,
+                label: 'Light Tick',
+                desc: '15ms crisp click • Subtle, battery-saving',
+                pattern: 'light' as HapticPatternType,
+              },
+              {
+                id: 'medium' as HapticIntensity,
+                label: 'Medium Pulse',
+                desc: '32ms natural tap • Balanced feel (Recommended)',
+                pattern: 'medium' as HapticPatternType,
+              },
+              {
+                id: 'heavy' as HapticIntensity,
+                label: 'Heavy Thump',
+                desc: '65ms solid thud • Maximum physical impact',
+                pattern: 'heavy' as HapticPatternType,
+              },
+            ].map((item) => {
+              const isSelected = settings.hapticIntensity === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => {
+                    onUpdateSettings({ hapticIntensity: item.id });
+                    hapticService.setConfig(settings.hapticFeedbackEnabled, item.id);
+                    hapticService.trigger(item.pattern);
+                  }}
+                  className={`p-3.5 rounded-2xl border text-left transition-all it-squircle-button cursor-pointer flex flex-col justify-between gap-1.5 ${
+                    isSelected
+                      ? 'bg-m3-primary text-m3-on-primary shadow-xs ring-2 ring-m3-primary/30 border-transparent'
+                      : 'bg-m3-surface-container text-m3-on-surface border-m3-outline-variant/35 hover:bg-m3-surface-container-high'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold">{item.label}</span>
+                    <div
+                      className={`w-5 h-5 rounded-full flex items-center justify-center ${
+                        isSelected ? 'bg-white text-m3-primary' : 'bg-m3-surface-container-highest text-transparent'
+                      }`}
+                    >
+                      <Check className="w-3 h-3 stroke-[3]" />
+                    </div>
+                  </div>
+                  <span
+                    className={`text-[11px] leading-tight ${
+                      isSelected ? 'text-white/85' : 'text-m3-on-surface-variant'
+                    }`}
+                  >
+                    {item.desc}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Interactive Tactile Test Bench */}
+        <div className="pt-2 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-m3-primary flex items-center gap-1.5">
+              <Activity className="w-3.5 h-3.5" />
+              <span>Interactive Tactile Patterns</span>
+            </span>
+            <span className="text-[10px] text-m3-on-surface-variant font-medium">
+              Tap any pattern to test vibration
+            </span>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2">
+            {[
+              { id: 'light' as HapticPatternType, label: 'Button Click', sub: 'Single tick' },
+              { id: 'water_drop' as HapticPatternType, label: 'Droplet Flutter', sub: 'Double ripple' },
+              { id: 'medium' as HapticPatternType, label: 'Cup Logged', sub: 'Standard tap' },
+              { id: 'heavy' as HapticPatternType, label: 'Bottle Logged', sub: 'Deep pulse' },
+              { id: 'celebration' as HapticPatternType, label: 'Goal Unlocked', sub: 'Fanfare burst' },
+              { id: 'warning' as HapticPatternType, label: 'Reminder Nudge', sub: 'Triple buzz' },
+            ].map((pat) => {
+              const isTesting = activeHapticTest === pat.id;
+              return (
+                <button
+                  key={pat.id}
+                  type="button"
+                  onClick={() => handleTestHaptic(pat.id)}
+                  disabled={!settings.hapticFeedbackEnabled}
+                  className={`p-3 rounded-2xl border text-center transition-all it-squircle-button cursor-pointer disabled:opacity-40 ${
+                    isTesting
+                      ? 'bg-m3-primary text-m3-on-primary border-transparent scale-95 shadow-md ring-2 ring-m3-primary/50'
+                      : 'bg-m3-surface-container border-m3-outline-variant/35 text-m3-on-surface hover:bg-m3-surface-container-high'
+                  }`}
+                >
+                  <Waves
+                    className={`w-4 h-4 mx-auto mb-1 ${
+                      isTesting ? 'animate-ping text-white' : 'text-m3-primary'
+                    }`}
+                  />
+                  <div className="text-[11px] font-bold truncate">{pat.label}</div>
+                  <div className="text-[9px] opacity-75 truncate">{pat.sub}</div>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Hardware Status & Info */}
+        <div className="p-3 rounded-2xl bg-m3-surface-container border border-m3-outline-variant/30 flex items-center gap-2.5 text-xs text-m3-on-surface-variant">
+          <div className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 animate-pulse" />
+          <span>
+            {hapticService.isSupported()
+              ? 'Web Vibration API hardware active on this device. Physical haptic feedback is ready.'
+              : 'Web Vibration API is active for touchscreens & mobile PWAs; visual ripple responses are enabled in this browser.'}
+          </span>
+        </div>
+      </div>
+
+      {/* PWA Home Screen Widget Support */}
+      <div className="rounded-[28px] bg-m3-surface-container-low border border-m3-outline-variant/35 p-5 sm:p-6 space-y-4 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-3 border-b border-m3-outline-variant/20 gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-2xl bg-m3-primary-container text-m3-on-primary-container flex items-center justify-center shrink-0">
+              <LayoutGrid className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-bold text-m3-on-surface">Home Screen Progress Widgets</h3>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-m3-primary-container text-m3-on-primary-container">
+                  PWA Feature
+                </span>
+              </div>
+              <p className="text-xs text-m3-on-surface-variant">
+                See your daily water intake and streak without opening the full application
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {onOpenWidgetModal && (
+              <button
+                type="button"
+                onClick={onOpenWidgetModal}
+                className="px-4 py-2 rounded-xl bg-m3-primary text-m3-on-primary text-xs font-bold hover:brightness-105 active:scale-95 transition it-squircle-button flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <LayoutGrid className="w-4 h-4" />
+                <span>Widget Studio</span>
+              </button>
+            )}
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+          {/* Card 1: Lockscreen & Mobile */}
+          <div className="p-3.5 rounded-2xl bg-m3-surface-container border border-m3-outline-variant/30 space-y-1.5">
+            <div className="w-8 h-8 rounded-xl bg-m3-primary/10 text-m3-primary flex items-center justify-center mb-1">
+              <Smartphone className="w-4 h-4" />
+            </div>
+            <h4 className="text-xs font-bold text-m3-on-surface">Mobile & Lock Screen</h4>
+            <p className="text-[11px] text-m3-on-surface-variant leading-relaxed">
+              Adds dynamic app icon badges and quick-log shortcuts directly on Android & iOS home screens.
+            </p>
+          </div>
+
+          {/* Card 2: Desktop Floating Widget */}
+          <div className="p-3.5 rounded-2xl bg-m3-surface-container border border-m3-outline-variant/30 space-y-1.5">
+            <div className="w-8 h-8 rounded-xl bg-m3-primary/10 text-m3-primary flex items-center justify-center mb-1">
+              <AppWindow className="w-4 h-4" />
+            </div>
+            <h4 className="text-xs font-bold text-m3-on-surface">Floating Desktop Widget</h4>
+            <p className="text-[11px] text-m3-on-surface-variant leading-relaxed">
+              Pop out an always-on-top compact widget window using Document Picture-in-Picture.
+            </p>
+          </div>
+
+          {/* Card 3: Windows & OS Boards */}
+          <div className="p-3.5 rounded-2xl bg-m3-surface-container border border-m3-outline-variant/30 space-y-1.5">
+            <div className="w-8 h-8 rounded-xl bg-m3-primary/10 text-m3-primary flex items-center justify-center mb-1">
+              <LayoutGrid className="w-4 h-4" />
+            </div>
+            <h4 className="text-xs font-bold text-m3-on-surface">PWA Widget Spec</h4>
+            <p className="text-[11px] text-m3-on-surface-variant leading-relaxed">
+              W3C Adaptive Card templates registered for Windows 11 Widgets Board & Android launchers.
+            </p>
           </div>
         </div>
       </div>

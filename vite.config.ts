@@ -11,7 +11,16 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'apple-touch-icon.png', 'pwa-192x192.png', 'pwa-512x512.png'],
+        includeAssets: [
+          'icon.svg',
+          'apple-touch-icon.png',
+          'pwa-192x192.png',
+          'pwa-512x512.png',
+          'sw-custom.js',
+          'timer-worker.js',
+          'widgets/hydroflow-template.json',
+          'widgets/hydroflow-data.json',
+        ],
         manifest: {
           id: '/',
           name: 'HydroFlow - Material 3 Water Tracker',
@@ -42,8 +51,61 @@ export default defineConfig(() => {
               purpose: 'maskable',
             },
           ],
+          shortcuts: [
+            {
+              name: 'Log Cup (+250ml)',
+              short_name: 'Log Cup',
+              description: 'Quickly log 250ml of water',
+              url: '/?action=log_cup',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'Log Bottle (+500ml)',
+              short_name: 'Log Bottle',
+              description: 'Quickly log 500ml of water',
+              url: '/?action=log_bottle',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }],
+            },
+            {
+              name: 'Progress Widget',
+              short_name: 'Widget',
+              description: 'Glanceable progress widget',
+              url: '/?mode=widget',
+              icons: [{ src: '/pwa-192x192.png', sizes: '192x192' }],
+            },
+          ],
+          // W3C PWA Widgets specification for Windows 11 & Android PWA Widget boards
+          // @ts-expect-error PWA manifest widgets extension
+          widgets: [
+            {
+              name: 'HydroFlow Progress Widget',
+              short_name: 'Hydration',
+              description: 'Glanceable daily hydration progress, streak, and quick drink action',
+              tag: 'hydroflow-progress',
+              template: 'hydroflow-widget',
+              ms_ac_template: '/widgets/hydroflow-template.json',
+              data: '/widgets/hydroflow-data.json',
+              type: 'application/json',
+              screenshots: [
+                {
+                  src: '/pwa-512x512.png',
+                  sizes: '512x512',
+                  label: 'HydroFlow Hydration Progress Widget',
+                },
+              ],
+              icons: [
+                {
+                  src: '/pwa-192x192.png',
+                  sizes: '192x192',
+                },
+              ],
+              auth: false,
+              update: 900,
+            },
+          ],
         },
         workbox: {
+          importScripts: ['/sw-custom.js'],
           globPatterns: ['**/*.{js,css,html,ico,png,svg,woff,woff2}'],
           runtimeCaching: [
             {

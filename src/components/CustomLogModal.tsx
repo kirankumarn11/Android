@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BeverageType, ContainerType } from '../types';
 import { X, Check } from 'lucide-react';
 import { Cup250Icon, Bottle500Icon, LargeBottle750Icon, CustomGlassIcon } from './ContainerIcons';
+import { hapticService } from '../services/hapticService';
 
 interface CustomLogModalProps {
   isOpen: boolean;
@@ -94,7 +95,10 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
                 <button
                   type="button"
                   key={q}
-                  onClick={() => setAmount(q)}
+                  onClick={() => {
+                    hapticService.selection();
+                    setAmount(q);
+                  }}
                   className={`text-[11px] px-2.5 py-1 rounded-xl font-medium transition it-squircle-button ${
                     amount === q
                       ? 'bg-m3-primary text-m3-on-primary font-bold shadow-xs'
@@ -117,7 +121,10 @@ export const CustomLogModal: React.FC<CustomLogModalProps> = ({
                 <button
                   type="button"
                   key={bev.id}
-                  onClick={() => setBeverage(bev.id)}
+                  onClick={() => {
+                    hapticService.selection();
+                    setBeverage(bev.id);
+                  }}
                   className={`p-2.5 rounded-2xl border text-xs font-bold flex flex-col items-center gap-1 transition it-squircle-button ${
                     beverage === bev.id
                       ? 'bg-m3-primary text-m3-on-primary shadow-xs'

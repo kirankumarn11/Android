@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { ThemeAccent, ThemeMode } from '../types';
 import { PWAInstallButton } from './PWAInstallButton';
 import { MonetPaletteModal } from './MonetPaletteModal';
-import { Droplet, Palette, Bell, Flame } from 'lucide-react';
+import { Droplet, Palette, Bell, Flame, LayoutGrid } from 'lucide-react';
 
 interface M3TopBarProps {
   theme: ThemeMode;
@@ -12,6 +12,7 @@ interface M3TopBarProps {
   streak: number;
   onOpenReminders: () => void;
   hasActiveReminder: boolean;
+  onOpenWidgetModal: () => void;
 }
 
 export const M3TopBar: React.FC<M3TopBarProps> = ({
@@ -22,6 +23,7 @@ export const M3TopBar: React.FC<M3TopBarProps> = ({
   streak,
   onOpenReminders,
   hasActiveReminder,
+  onOpenWidgetModal,
 }) => {
   const [showPaletteModal, setShowPaletteModal] = useState(false);
 
@@ -77,11 +79,21 @@ export const M3TopBar: React.FC<M3TopBarProps> = ({
             {/* Monet Dynamic Palette Switcher Button */}
             <button
               onClick={() => setShowPaletteModal(true)}
-              className="w-10 h-10 rounded-2xl bg-m3-surface-container-low border border-m3-outline-variant/30 hover:bg-m3-surface-container-high text-m3-on-surface flex items-center justify-center transition-all it-squircle-button"
+              className="w-10 h-10 rounded-2xl bg-m3-surface-container-low border border-m3-outline-variant/30 hover:bg-m3-surface-container-high text-m3-on-surface flex items-center justify-center transition-all it-squircle-button cursor-pointer"
               title="Change Material You color palette & theme"
               aria-label="Color Palette"
             >
               <Palette className="w-4 h-4 text-m3-primary" />
+            </button>
+
+            {/* PWA Home Screen Progress Widget Button */}
+            <button
+              onClick={onOpenWidgetModal}
+              className="w-10 h-10 rounded-2xl bg-m3-surface-container-low border border-m3-outline-variant/30 hover:bg-m3-surface-container-high text-m3-on-surface flex items-center justify-center transition-all it-squircle-button cursor-pointer"
+              title="Home Screen Progress Widget Support"
+              aria-label="Home Screen Widget"
+            >
+              <LayoutGrid className="w-4 h-4 text-m3-primary" />
             </button>
 
             {/* PWA Install Button */}

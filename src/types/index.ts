@@ -15,6 +15,18 @@ export type ThemeMode = 'system' | 'light' | 'dark' | 'amoled';
 
 export type ThemeAccent = 'water' | 'mint' | 'rose' | 'violet' | 'amber' | 'monochrome';
 
+export type SoundType =
+  | 'bubble'
+  | 'chime'
+  | 'nature'
+  | 'droplet'
+  | 'gentle'
+  | 'bell'
+  | 'marimba'
+  | 'zen';
+
+export type HapticIntensity = 'light' | 'medium' | 'heavy';
+
 export interface AppSettings {
   dailyGoal: number; // in ml, default 2500
   cupVolume: number; // in ml, default 250
@@ -31,7 +43,9 @@ export interface AppSettings {
   autoSnoozeIfNoInput: boolean; // default true: remind once again if no input detected
   autoSnoozeGracePeriodMinutes: number; // default 5 minutes
   soundChimeEnabled: boolean;
-  soundType: 'droplet' | 'gentle' | 'bell' | 'marimba';
+  soundType: SoundType;
+  hapticFeedbackEnabled: boolean;
+  hapticIntensity: HapticIntensity;
   notificationsAllowed: boolean;
 }
 
